@@ -1,0 +1,46 @@
+/* Praxis Behavioral Health pack dashboard — the compliance surfaces.
+   Violet theme (accent #7c3aed, per pack.json theme). Matches the
+   rail-section pattern used by the other vertical packs. */
+
+#behavioral-health-section { display: block; }
+#behavioral-health-mount { display: flex; flex-direction: column; gap: 14px; }
+
+.bh-surface {
+  border: 1px solid var(--border, #1f2a3a);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--panel, #0f172a);
+}
+.bh-surface-title {
+  font-size: 11px; font-weight: 600; margin: 0 0 8px 0;
+  color: #c4b5fd; text-transform: uppercase; letter-spacing: 1px;
+}
+.bh-surface-body { font-size: 12px; color: var(--text, #e6edf3); }
+
+.bh-empty { color: var(--muted, #7d8590); font-style: italic; }
+.bh-muted { color: var(--muted, #7d8590); }
+
+.bh-stat-line { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.bh-stat { font-weight: 600; }
+.bh-stat-ok { color: #22c55e; }
+.bh-stat-warn { color: #f59e0b; }
+.bh-stat-bad { color: #ef4444; }
+
+.bh-row { padding: 2px 0; color: var(--text, #e6edf3); }
+
+.bh-list { list-style: none; margin: 4px 0 0 0; padding: 0; }
+
+.bh-pill {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.bh-pill-held { background: #7c3aed22; color: #c4b5fd; border: 1px solid #7c3aed55; }
+.bh-pill-blocked { background: #ef444422; color: #fca5a5; border: 1px solid #ef444455; }
+.bh-pill-filed { background: #22c55e22; color: #86efac; border: 1px solid #22c55e55; }
+
+.bh-gate-banner {
+  border: 1px solid #7c3aed55; border-radius: 6px; padding: 8px 10px;
+  background: #7c3aed11; font-size: 11px; color: #c4b5fd;
+  margin-bottom: 8px;
+}
