@@ -152,6 +152,9 @@ def _authorization_covers(
 ) -> bool:
     if auth.revoked:
         return False
+    if (not auth.authorization_id.strip() or auth.authorized_at <= 0 or
+            auth.authorized_at > now):
+        return False
     if auth.patient_id != encounter.patient_id:
         return False
     if auth.encounter_id != encounter.encounter_id:
@@ -192,6 +195,15 @@ def check_minor_mh_record_access(
     now_ts = _t.time() if now == 0.0 else now
     report = MinorMhAccessReport(request=request, encounter=encounter)
     state = encounter.state.upper()
+
+    if (request.encounter_id != encounter.encounter_id or
+            not request.request_id.strip() or not request.requester_id.strip() or
+            not encounter.encounter_id.strip() or not encounter.patient_id.strip()):
+        report.findings.append(MinorMhAccessFinding(
+            "critical", "identity_mismatch",
+            "request and encounter identities are missing or do not match", state,
+        ))
+        return report
 
     prof = get_mh_profile(state)
     if prof is None:
@@ -238,10 +250,12 @@ def check_minor_mh_record_access(
     role = request.requester_role
 
     if role == "minor_patient":
-        report.allowed = True
+        report.allowed = request.requester_id == encounter.patient_id
         report.findings.append(MinorMhAccessFinding(
-            "info", "minor_self_access",
-            "minor patient accessing their own confidential MH records — allowed",
+            "info" if report.allowed else "critical",
+            "minor_self_access" if report.allowed else "minor_identity_mismatch",
+            "minor patient accessing their own confidential MH records — allowed"
+            if report.allowed else "requester identity does not match the patient",
             state,
         ))
         return report

@@ -118,11 +118,18 @@ PART2_REDISCLOSURE_NOTICE = (
 def _consent_covers(consent: Part2Consent, request: Part2DisclosureRequest, *, now: float) -> bool:
     if consent.revoked:
         return False
+    if (not all((consent.consent_id.strip(), consent.patient_id.strip(),
+                 consent.recipient.strip(), consent.purpose.strip(),
+                 consent.amount_description.strip())) or
+            consent.authorized_at <= 0 or consent.authorized_at > now):
+        return False
     if consent.patient_id != request.patient_id:
         return False
-    if consent.expires_at and consent.expires_at < now:
+    if consent.expires_at <= 0 or consent.expires_at < now:
         return False
-    if consent.recipient not in (request.recipient, "*"):
+    if consent.recipient != request.recipient:
+        return False
+    if consent.purpose.casefold().strip() != request.purpose.casefold().strip():
         return False
     return True
 
@@ -149,6 +156,19 @@ def assess_part2_disclosure(
     report = Part2DisclosureReport(request=request)
 
     recipient = request.recipient
+
+    protected_categories = {
+        "substance_use", "sud_treatment", "medication_assisted_treatment",
+    }
+    if (not all((request.request_id.strip(), request.patient_id.strip(),
+                 request.state.strip(), recipient.strip(), request.purpose.strip())) or
+            request.requested_at <= 0 or
+            request.record_category.casefold().strip() not in protected_categories):
+        report.findings.append(Part2Finding(
+            "critical", "invalid_disclosure_request",
+            "Part 2 request identity, purpose, timestamp, and record category are required.",
+        ))
+        return report
 
     # Law enforcement and bare subpoenas need a Part 2 court order, not just consent
     if recipient in ("law_enforcement", "court_subpoena"):

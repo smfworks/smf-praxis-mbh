@@ -105,16 +105,30 @@ class PsychotherapyNoteLedger:
         # Praxis never drafts PSYCHOTHERAPY_NOTEs — they are the clinician's
         # private process notes. Only a clinician (drafted_by != "praxis")
         # may register a psychotherapy-note draft.
-        if (draft.note_type == "PSYCHOTHERAPY_NOTE"
-                and draft.drafted_by == "praxis"):
+        note_type = draft.note_type.upper().strip()
+        if note_type not in {"PSYCHOTHERAPY_NOTE", "PROGRESS_NOTE"}:
+            raise PsychotherapyNoteError(f"unsupported note type: {draft.note_type!r}")
+        if (note_type == "PSYCHOTHERAPY_NOTE"
+                and draft.drafted_by.casefold().strip() == "praxis"):
             raise PsychotherapyNoteError(
                 f"Praxis may not draft a PSYCHOTHERAPY_NOTE (draft {draft.draft_id}) "
                 f"— psychotherapy notes are the clinician's private process notes "
                 f"and may not be AI-authored (45 CFR §164.508). Praxis may draft "
                 f"PROGRESS_NOTEs only.")
+        if not all((draft.draft_id.strip(), draft.chart_id.strip(),
+                    draft.patient_id.strip(), draft.content_hash.strip(),
+                    draft.drafted_by.strip())):
+            raise PsychotherapyNoteError("draft identity and content hash are required")
+        existing = self._drafts.get(draft.draft_id)
+        if existing is not None and existing != draft:
+            raise PsychotherapyNoteError(
+                f"draft {draft.draft_id} is immutable and cannot be overwritten")
         self._drafts[draft.draft_id] = draft
 
     def add_authorization(self, auth: SpecificAuthorization) -> None:
+        if not all((auth.authorization_id.strip(), auth.patient_id.strip(),
+                    auth.recipient.strip(), auth.purpose.strip())) or auth.authorized_at <= 0:
+            raise PsychotherapyNoteError("specific authorization evidence is incomplete")
         self._authorizations.append(auth)
 
     def get_draft(self, draft_id: str) -> PsychotherapyDraft | None:
@@ -124,11 +138,17 @@ class PsychotherapyNoteLedger:
         if attestation.draft_id not in self._drafts:
             raise PsychotherapyNoteError(
                 f"cannot attest draft {attestation.draft_id} — not registered")
-        existing = [a for a in self._attestations
-                    if a.draft_id == attestation.draft_id
-                    and a.attestation_type in ("signed", "amended")]
-        if existing and attestation.attestation_type in ("signed", "amended"):
-            return existing[0]
+        if not all((attestation.attestation_id.strip(), attestation.clinician_id.strip())):
+            raise PsychotherapyNoteError("attestation identity and clinician are required")
+        if attestation.attested_at <= 0:
+            raise PsychotherapyNoteError("attestation timestamp is required")
+        if attestation.attestation_type == "amended" and not attestation.edit_hash.strip():
+            raise PsychotherapyNoteError("amended attestation requires edit_hash")
+        existing = [a for a in self._attestations if a.draft_id == attestation.draft_id]
+        if existing:
+            if attestation in existing:
+                return attestation
+            raise PsychotherapyNoteError("draft already has a terminal attestation")
         self._attestations.append(attestation)
         return attestation
 
@@ -145,16 +165,21 @@ class PsychotherapyNoteLedger:
         import time as _t
         now_ts = _t.time() if now == 0.0 else now
         d = self._drafts.get(draft_id)
-        if d is None or d.note_type != "PSYCHOTHERAPY_NOTE":
-            return True  # not a psychotherapy note; ordinary PHI rules apply
+        if d is None:
+            return False
+        if d.note_type.upper().strip() != "PSYCHOTHERAPY_NOTE":
+            return True  # progress-note disclosure follows ordinary PHI rules
+        if not self.can_write_note(draft_id) or not recipient.strip():
+            return False
         for auth in self._authorizations:
             if auth.revoked:
                 continue
             if auth.patient_id != d.patient_id:
                 continue
-            if auth.expires_at and auth.expires_at < now_ts:
+            if (auth.authorized_at <= 0 or auth.authorized_at > now_ts or
+                    auth.expires_at <= 0 or auth.expires_at < now_ts):
                 continue
-            if auth.recipient in (recipient, "*"):
+            if auth.recipient == recipient and auth.purpose.strip():
                 return True
         return False
 

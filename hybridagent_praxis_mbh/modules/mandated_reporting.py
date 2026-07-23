@@ -101,9 +101,23 @@ def file_mandated_report(
     clinician sign-off is required.
     """
     import time as _t
-    _t.time() if now == 0.0 else now
+    now_ts = _t.time() if now == 0.0 else now
     prof = get_mh_profile(incident.state)
     result = MandatedReportResult(incident=incident)
+
+    valid_reasons = {
+        "child_abuse", "dependent_adult_abuse", "elder_abuse", "neglect", "other",
+    }
+    if (not all((incident.incident_id.strip(), incident.patient_id.strip(),
+                 incident.state.strip(), incident.description.strip())) or
+            incident.reason not in valid_reasons or
+            incident.detected_at <= 0 or incident.detected_at > now_ts):
+        result.findings.append(MandatedReportFinding(
+            "critical", "invalid_incident_evidence",
+            "incident identity, reason, description, and detection time are required",
+        ))
+        result.requires_clinician_sign_off = True
+        return result
 
     if prof is None:
         result.findings.append(MandatedReportFinding(
@@ -131,6 +145,13 @@ def file_mandated_report(
         f"Citation: {prof.mandated_report_citation}. Praxis does NOT file as the "
         f"reporter of record — SEND held for clinician sign-off.",
     ))
+    if incident.reason in {"dependent_adult_abuse", "elder_abuse"}:
+        result.findings.append(MandatedReportFinding(
+            "high", "adult_protective_services_verification_required",
+            "Adult/elder protective-services routing and deadline require "
+            "jurisdiction-specific clinician verification; the conservative "
+            "deadline must be confirmed before filing.",
+        ))
     ledger._register(incident)
     return result
 
@@ -142,6 +163,9 @@ class MandatedReportLedger:
         self._incidents: dict[str, MandatedReportIncident] = {}
 
     def _register(self, incident: MandatedReportIncident) -> None:
+        existing = self._incidents.get(incident.incident_id)
+        if existing is not None and existing != incident:
+            raise MandatedReportError("incident is immutable and cannot be overwritten")
         self._incidents[incident.incident_id] = incident
 
     def sign_off(
@@ -155,6 +179,10 @@ class MandatedReportLedger:
         if inc.status != "filed":
             raise MandatedReportError(
                 f"cannot sign off incident in status '{inc.status}' — must be 'filed'")
+        if (not signed_off_by.strip() or not scr_reference.strip() or
+                signed_off_at <= 0 or signed_off_at < inc.detected_at):
+            raise MandatedReportError(
+                "sign-off actor, SCR reference, and valid timestamp are required")
         if signed_off_at > inc.deadline_at:
             raise MandatedReportError(
                 f"sign-off at {signed_off_at} is PAST the SCR deadline "

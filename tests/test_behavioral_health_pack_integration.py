@@ -255,7 +255,7 @@ def test_part2_disclosure_without_consent_blocked():
     report = assess_part2_disclosure(
         Part2DisclosureRequest(
             "dr1", "p1", "NY", "substance_use", "health_plan",
-            requested_at=NOW,
+            requested_at=NOW, purpose="treatment_payment",
         ),
         consent=None,
         now=NOW,
@@ -271,7 +271,7 @@ def test_part2_law_enforcement_requires_court_order():
     report = assess_part2_disclosure(
         Part2DisclosureRequest(
             "dr2", "p1", "NY", "substance_use", "law_enforcement",
-            requested_at=NOW,
+            requested_at=NOW, purpose="investigation",
         ),
         consent=None,
         now=NOW,
@@ -289,7 +289,7 @@ def test_part2_with_valid_consent_permits_with_redisclosure_notice():
     report = assess_part2_disclosure(
         Part2DisclosureRequest(
             "dr3", "p1", "NY", "substance_use", "health_plan",
-            requested_at=NOW,
+            requested_at=NOW, purpose="treatment_payment",
         ),
         consent=consent,
         now=NOW,

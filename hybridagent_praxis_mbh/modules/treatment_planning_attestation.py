@@ -74,6 +74,13 @@ class TreatmentPlanLedger:
         self._attestations: list[TreatmentPlanAttestation] = []
 
     def register_draft(self, draft: TreatmentPlanDraft) -> None:
+        if not all((draft.draft_id.strip(), draft.chart_id.strip(),
+                    draft.patient_id.strip(), draft.content_hash.strip())):
+            raise TreatmentPlanAttestationError("draft identity and content hash are required")
+        existing = self._drafts.get(draft.draft_id)
+        if existing is not None and existing != draft:
+            raise TreatmentPlanAttestationError(
+                f"draft {draft.draft_id} is immutable and cannot be overwritten")
         self._drafts[draft.draft_id] = draft
 
     def get_draft(self, draft_id: str) -> TreatmentPlanDraft | None:
@@ -83,11 +90,17 @@ class TreatmentPlanLedger:
         if attestation.draft_id not in self._drafts:
             raise TreatmentPlanAttestationError(
                 f"cannot attest draft {attestation.draft_id} — not registered")
-        existing = [a for a in self._attestations
-                    if a.draft_id == attestation.draft_id
-                    and a.attestation_type in ("signed", "amended")]
-        if existing and attestation.attestation_type in ("signed", "amended"):
-            return existing[0]
+        if not all((attestation.attestation_id.strip(), attestation.clinician_id.strip())):
+            raise TreatmentPlanAttestationError("attestation identity and clinician are required")
+        if attestation.attested_at <= 0:
+            raise TreatmentPlanAttestationError("attestation timestamp is required")
+        if attestation.attestation_type == "amended" and not attestation.edit_hash.strip():
+            raise TreatmentPlanAttestationError("amended attestation requires edit_hash")
+        existing = [a for a in self._attestations if a.draft_id == attestation.draft_id]
+        if existing:
+            if attestation in existing:
+                return attestation
+            raise TreatmentPlanAttestationError("draft already has a terminal attestation")
         self._attestations.append(attestation)
         return attestation
 

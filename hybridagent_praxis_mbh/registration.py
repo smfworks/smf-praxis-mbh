@@ -15,12 +15,16 @@ dashboard route actually executes.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from hybridagent.broker import RiskClass
 from hybridagent.evals import EvalCase
 from hybridagent.verticals.registry import (
     VerticalSpec,
     register_vertical_eval_cases,
+    register_vertical_pack_root,
     register_vertical_spec,
+    register_vertical_web_root,
 )
 
 _BEHAVIORAL_HEALTH_SPEC = VerticalSpec(
@@ -29,7 +33,7 @@ _BEHAVIORAL_HEALTH_SPEC = VerticalSpec(
     compliance_mode="enforced",
     autonomous={RiskClass.READ, RiskClass.DRAFT},
     held={RiskClass.SEND, RiskClass.DESTRUCTIVE},
-    version="0.1.0",
+    version="0.1.1",
 )
 
 # A single registered spec mirrors the one-pack pattern of the forensic and
@@ -196,7 +200,7 @@ def _part2_redisclosure_case():
         report = assess_part2_disclosure(
             Part2DisclosureRequest(
                 "dr1", "p1", "NY", "substance_use", "health_plan",
-                requested_at=1_780_000_000.0,
+                requested_at=1_780_000_000.0, purpose="treatment_payment",
             ),
             consent=None,
             now=1_780_000_000.0,
@@ -261,3 +265,5 @@ def register() -> None:
 
     register_vertical_spec(_BEHAVIORAL_HEALTH_SPEC)
     register_vertical_eval_cases(_manual_cases)
+    register_vertical_pack_root(Path(__file__).resolve().parent / "packs")
+    register_vertical_web_root(Path(__file__).resolve().parent / "web")

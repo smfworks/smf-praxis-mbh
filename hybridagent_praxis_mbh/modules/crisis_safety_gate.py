@@ -210,8 +210,10 @@ def draft_safety_plan(assessment: CrisisAssessment) -> SafetyPlanDraft:
     triggers = ("situational triggers the patient identified",)
     coping = ("grounding techniques", "reach out to a support person",
               "use the crisis line")
-    supports = ("988 Suicide & Crisis Lifeline (call/text 988)",
-                "patient's identified support person")
+    supports: tuple[str, ...] = (
+        "988 Suicide & Crisis Lifeline (call/text 988)",
+        "patient's identified support person",
+    )
     means = ("discuss means-restriction with the clinician",
              "secure or remove access to lethal means if safe to do so")
     if prof is not None:
