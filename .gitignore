@@ -25,3 +25,8 @@ htmlcov/
 .idea/
 *.swp
 .DS_Store
+# Hermes release-gate state (session-local, must not be committed)
+.hermes/
+
+# Virtual environment
+.venv/

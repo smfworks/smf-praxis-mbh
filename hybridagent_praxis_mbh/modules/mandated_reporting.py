@@ -87,7 +87,7 @@ class MandatedReportError(Exception):
 
 
 def file_mandated_report(
-    ledger: "MandatedReportLedger",
+    ledger: MandatedReportLedger,
     incident: MandatedReportIncident,
     *,
     now: float = 0.0,
