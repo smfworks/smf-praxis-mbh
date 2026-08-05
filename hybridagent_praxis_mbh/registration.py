@@ -33,7 +33,7 @@ _BEHAVIORAL_HEALTH_SPEC = VerticalSpec(
     compliance_mode="enforced",
     autonomous={RiskClass.READ, RiskClass.DRAFT},
     held={RiskClass.SEND, RiskClass.DESTRUCTIVE},
-    version="0.1.1",
+    version="0.2.1",
 )
 
 # A single registered spec mirrors the one-pack pattern of the forensic and
