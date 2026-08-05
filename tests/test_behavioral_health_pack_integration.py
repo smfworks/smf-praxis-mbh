@@ -12,10 +12,11 @@ generic persona + posture cases are generated from the registered spec).
 """
 from __future__ import annotations
 
+import pytest
+
 # Importing the package auto-registers the behavioral_health spec + eval
 # factory with the base registry (process-global, idempotent).
 import hybridagent_praxis_mbh  # noqa: F401
-import pytest
 from hybridagent_praxis_mbh.modules.crisis_safety_gate import (
     CrisisAssessment,
     DutyToWarnReport,

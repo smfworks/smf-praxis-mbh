@@ -129,9 +129,7 @@ def _consent_covers(consent: Part2Consent, request: Part2DisclosureRequest, *, n
         return False
     if consent.recipient != request.recipient:
         return False
-    if consent.purpose.casefold().strip() != request.purpose.casefold().strip():
-        return False
-    return True
+    return consent.purpose.casefold().strip() == request.purpose.casefold().strip()
 
 
 def assess_part2_disclosure(

@@ -125,7 +125,7 @@ class TestReviewerPrompts:
 
     def test_reviewer_domains_complete(self):
         assert set(rg.REVIEWER_DOMAINS.keys()) == {"legal", "learning", "release"}
-        for _domain, info in rg.REVIEWER_DOMAINS.items():
+        for info in rg.REVIEWER_DOMAINS.values():
             assert "title" in info
             assert "focus" in info
             assert len(info["focus"]) > 10
@@ -400,7 +400,7 @@ class TestNowISO:
     def test_now_iso_format(self):
         ts = rg._now_iso()
         assert "T" in ts
-        assert ts.endswith("+00:00") or ts.endswith("Z")
+        assert ts.endswith(("+00:00", "Z"))
 
     def test_now_iso_valid(self):
         from datetime import datetime

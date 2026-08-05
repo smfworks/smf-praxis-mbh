@@ -239,8 +239,8 @@ def render_duty_to_warn_report(report: DutyToWarnReport) -> str:
         "Duty-to-Warn / Protect Assessment (clinician review)",
         f"Assessment: {a.assessment_id} | Patient: {a.patient_id} | State: {a.state}",
         f"Standard: {report.standard} | Citation: {report.citation}",
-        f"Duty triggered: {report.duty_triggered} | "
-        f"Clinician action required: {report.requires_clinician_action}",
+        (f"Duty triggered: {report.duty_triggered} | "
+        f"Clinician action required: {report.requires_clinician_action}"),
         "=" * 60,
     ]
     if not report.findings:

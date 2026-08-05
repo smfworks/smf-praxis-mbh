@@ -161,15 +161,7 @@ def _authorization_covers(
         return False
     if auth.expires_at and auth.expires_at < now:
         return False
-    if auth.authorized_recipient not in (
-        requester.requester_id, requester.requester_role, "parent_guardian",
-    ):
-        if not (
-            requester.requester_role == "parent_guardian"
-            and auth.authorized_recipient in ("parent_guardian", "parent", "guardian")
-        ):
-            return False
-    return True
+    return not (auth.authorized_recipient not in (requester.requester_id, requester.requester_role, "parent_guardian") and not (requester.requester_role == "parent_guardian" and auth.authorized_recipient in ("parent_guardian", "parent", "guardian")))
 
 
 def check_minor_mh_record_access(
