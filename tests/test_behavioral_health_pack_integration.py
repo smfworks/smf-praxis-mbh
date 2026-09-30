@@ -132,10 +132,12 @@ def test_no_duty_when_threat_not_credible():
     assert not report.duty_triggered
 
 
-@pytest.mark.parametrize("state", ["NY", "CT", "MA"])
+@pytest.mark.parametrize("state", ["NY", "MA"])
 def test_duty_to_protect_states_trigger(state):
-    """NY/CT/MA impose a duty to protect; credible + identifiable + history
-    triggers clinician action."""
+    """NY (Mental Hyg. Law §9.46 reporting duty) and MA (c. 123, §36B) impose
+    a statutory duty; a credible identifiable threat triggers clinician action.
+    Connecticut is permissive disclosure under §52-146f and is covered in the
+    duty-to-warn jurisdiction tests."""
     report = assess_duty_to_warn(
         CrisisAssessment(
             "ca3", "p1", state,

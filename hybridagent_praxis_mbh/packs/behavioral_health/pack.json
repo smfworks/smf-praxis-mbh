@@ -31,7 +31,7 @@
     {
       "name": "duty-to-warn-gate",
       "trigger": "credible threat, identifiable victim, Tarasoff, duty to warn, duty to protect, homicidal ideation with target",
-      "body": "1. Run assess_duty_to_warn with the CrisisAssessment facts. 2. If duty_triggered under the state's standard (codified/common-law/duty-to-protect), route protective action to the clinician. 3. Praxis NEVER contacts the victim, law enforcement, or a hospital autonomously — every external contact is SEND-held. 4. Draft a safety-plan scaffold for clinician review; means-restriction recommendations route through approval. 5. The clinician — not Praxis — decides whether the duty applies and what protective action to take."
+      "body": "1. Run assess_duty_to_warn with the CrisisAssessment facts. 2. If duty_triggered under the state's standard (codified/common-law/mandatory duty to protect), route protective action to the clinician. Permissive-disclosure and no-duty states still require clinician judgment and do not set duty_triggered. 3. Praxis NEVER contacts the victim, law enforcement, or a hospital autonomously — every external contact is SEND-held. 4. Draft a safety-plan scaffold for clinician review; means-restriction recommendations route through approval. 5. The clinician — not Praxis — decides whether the duty applies and what protective action to take. Not legal or clinical advice."
     },
     {
       "name": "mandated-reporter-workflow",

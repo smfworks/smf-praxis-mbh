@@ -27,20 +27,29 @@ Profiles are frozen dataclasses, one per state, loaded lazily. The
 13-state registry matches the medical vertical's coverage: FL, GA, SC,
 TN, VA, WV, MD, PA, OH, NJ, NY, CT, MA.
 
-Confidence: established_knowledge for most statutory citations; primary
-sources noted where confirmed. This is decision-support ground, not
-legal advice — clinicians remain the decision-makers.
+The duty-to-warn / duty-to-protect facts for all 50 states and the
+District of Columbia live in :mod:`duty_to_warn_registry` and are applied
+to each profile below. NOT LEGAL OR CLINICAL ADVICE. Verify with your
+state board and counsel. Clinicians remain the decision-makers.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Literal
 
+from .duty_to_warn_registry import (
+    NOT_LEGAL_ADVICE,
+    DutyToWarnEntry,
+    all_duty_to_warn,
+    get_duty_to_warn,
+)
+
 DutyToWarnStandard = Literal[
-    "tarasoff_codified",      # duty to warn/protect codified (CA, etc.)
-    "tarasoff_common_law",    # duty recognized by case law
-    "duty_to_protect",        # duty to protect (warn is one means)
-    "no_statutory_duty",      # no codified duty (clinician judgment)
+    "tarasoff_codified",      # statutory duty kept under the CA eval label
+    "tarasoff_common_law",    # duty recognized by case law only
+    "duty_to_protect",        # mandatory statutory duty to warn or protect
+    "permissive_disclosure",  # statute allows disclosure; no duty verified
+    "no_statutory_duty",      # no duty statute or binding duty opinion verified
 ]
 
 MandatedReporterScope = Literal[
@@ -102,15 +111,58 @@ class MhProfile:
 
     # --- optional / defaulted fields below ---
     duty_to_warn_note: str = ""
+    # Filled from the 50-state + DC duty table. Empty only if a profile
+    # predates that table; every current profile sets these.
+    duty_classification: str = ""
+    duty_trigger: str = ""
+    duty_discharge: str = ""
+    duty_professions: str = ""
+    duty_source_url: str = ""
+    duty_checked_on: str = ""
+    duty_verified: bool = False
     part2_citation: str = "42 CFR Part 2"
     psychotherapy_note_citation: str = "45 CFR §164.508"
     confidence: str = "established_knowledge"
 
 # ---------------------------------------------------------------------------
 # Per-state profiles — 13-state registry (FL, GA, SC, TN, VA, WV, MD, PA,
-# OH, NJ, NY, CT, MA). Citations are established-knowledge decision-support
-# ground; clinicians remain the decision-makers.
+# OH, NJ, NY, CT, MA), plus CA for the codified-duty eval. Duty-to-warn
+# fields come from the researched table. NOT LEGAL OR CLINICAL ADVICE.
 # ---------------------------------------------------------------------------
+
+def _duty_kwargs(state: str) -> dict:
+    """Profile fields taken from the researched duty-to-warn row.
+
+    California keeps the historical ``tarasoff_codified`` label so the
+    existing eval and tests still see that standard. Every other mandatory
+    statutory duty uses ``duty_to_protect``, which the crisis gate already
+    treats as duty-triggering.
+    """
+    entry = get_duty_to_warn(state)
+    if entry is None:
+        raise KeyError(state)
+    standard_by_class: dict[str, DutyToWarnStandard] = {
+        "mandatory_duty": "duty_to_protect",
+        "case_law_only": "tarasoff_common_law",
+        "permissive_disclosure": "permissive_disclosure",
+        "no_duty_or_none_found": "no_statutory_duty",
+    }
+    standard: DutyToWarnStandard = (
+        "tarasoff_codified" if state == "CA" else standard_by_class[entry.classification]
+    )
+    return {
+        "duty_to_warn_standard": standard,
+        "duty_to_warn_citation": entry.citation,
+        "duty_to_warn_note": entry.note,
+        "duty_classification": entry.classification,
+        "duty_trigger": entry.trigger,
+        "duty_discharge": entry.discharge,
+        "duty_professions": entry.professions,
+        "duty_source_url": entry.source_url,
+        "duty_checked_on": entry.checked_on,
+        "duty_verified": entry.verified,
+    }
+
 
 _FL = MhProfile(
     state="FL", state_name="Florida",
@@ -118,8 +170,7 @@ _FL = MhProfile(
     board_url="https://floridasmentalhealthprofessions.gov/",
     governing_statute="FL Stat. ch. 491 (Clinical, Counseling, and Psychotherapy Services)",
     statute_url="http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0400-0499/0491/",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="FL imposes no codified Tarasoff duty; clinician judgment under ethics rules",
+    **_duty_kwargs("FL"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="FL Stat. §39.201 (reports of child abuse)",
@@ -141,8 +192,7 @@ _GA = MhProfile(
     board_url="https://sos.ga.gov/georgia-consumer-services/composite-board-professional-counselors-social-workers-and-marriage-family-therapists",
     governing_statute="O.C.G.A. tit. 43, ch. 10A (Professions and Businesses; Counselors, Social Workers, MFTs)",
     statute_url="https://codes.findlaw.com/ga/title-43/ga-st-sect-43-10a-1/",
-    duty_to_warn_standard="duty_to_protect",
-    duty_to_warn_citation="O.C.G.A. §51-1-27 (duty to protect; no codified warn, case-law informed)",
+    **_duty_kwargs("GA"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="O.C.G.A. §19-7-5 (mandated reporters of child abuse)",
@@ -164,8 +214,7 @@ _SC = MhProfile(
     board_url="https://llr.sc.gov/socialwork/",
     governing_statute="S.C. Code tit. 40, ch. 63 (Social Workers); ch. 49 (Counselors/MFTs)",
     statute_url="https://www.scstatehouse.gov/code/t40c63.php",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="SC imposes no codified Tarasoff duty; clinician judgment",
+    **_duty_kwargs("SC"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="S.C. Code §63-7-310 (mandated reporters)",
@@ -187,8 +236,7 @@ _TN = MhProfile(
     board_url="https://www.tn.gov/health/health-program-areas/health-professions/social-worker.html",
     governing_statute="T.C.A. tit. 63, ch. 23 (Social Workers); ch. 22 (Professional Counselors/MFTs)",
     statute_url="https://law.justia.com/codes/tennessee/title-63/",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="TN imposes no codified Tarasoff duty; clinician judgment",
+    **_duty_kwargs("TN"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="T.C.A. §37-1-403 (mandatory reporting)",
@@ -210,8 +258,7 @@ _VA = MhProfile(
     board_url="https://www.dhp.virginia.gov/counseling/",
     governing_statute="Va. Code tit. 54.1, ch. 35 (Counselors); ch. 37 (Social Workers)",
     statute_url="https://law.lis.virginia.gov/vacode/title54.1/",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="VA imposes no codified Tarasoff duty; clinician judgment (ethics-grounded)",
+    **_duty_kwargs("VA"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="Va. Code §63.2-1509 (mandatory reporting)",
@@ -233,8 +280,7 @@ _WV = MhProfile(
     board_url="https://wvswboard.wv.gov/",
     governing_statute="W. Va. Code ch. 30, art. 30 (Social Workers); art. 31 (Counselors); art. 56 (MFTs)",
     statute_url="http://www.wvlegislature.gov/wvcode/",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="WV imposes no codified Tarasoff duty; clinician judgment",
+    **_duty_kwargs("WV"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="W. Va. Code §49-1-209 (mandatory reporting)",
@@ -256,8 +302,7 @@ _MD = MhProfile(
     board_url="https://health.maryland.gov/socwork/",
     governing_statute="Md. Code, Health Occ. tit. 17 (Professional Counselors/Therapists); tit. 12 (Social Workers)",
     statute_url="https://mgaleg.maryland.gov/megafile_msps/syber/heal/17.htm",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="MD imposes no codified Tarasoff duty; clinician judgment (ethics-grounded)",
+    **_duty_kwargs("MD"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="Md. Code, FL §5-704 (mandatory reporting of child abuse)",
@@ -279,8 +324,7 @@ _PA = MhProfile(
     board_url="https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/SocialWorkersMFTsProfessionalCounselors/",
     governing_statute="63 P.S. §1501 et seq. (Social Workers, MFTs, Professional Counselors)",
     statute_url="https://www.legis.state.pa.us/cfdocs/legis/LI/uactCheck.cfm?txtType=HTM&yr=1987&sessInd=0&act=79",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="PA imposes no codified Tarasoff duty; clinician judgment (ethics-grounded)",
+    **_duty_kwargs("PA"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="23 Pa.C.S. §6311 (mandated reporters)",
@@ -302,8 +346,7 @@ _OH = MhProfile(
     board_url="https://cswmft.ohio.gov/",
     governing_statute="Ohio Rev. Code ch. 4757 (Counselors, Social Workers, MFTs)",
     statute_url="https://codes.ohio.gov/ohio-revised-code/chapter-4757",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="OH imposes no codified Tarasoff duty; clinician judgment (ethics-grounded)",
+    **_duty_kwargs("OH"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="Ohio Rev. Code §2151.421 (mandatory reporting)",
@@ -325,8 +368,7 @@ _NJ = MhProfile(
     board_url="https://www.njconsumeraffairs.gov/sow/",
     governing_statute="N.J.S.A. 45:15BB-1 et seq. (Social Workers); 45:16BB-1 et seq. (MFTs)",
     statute_url="https://www.njconsumeraffairs.gov/sow/Pages/statutes-rules.aspx",
-    duty_to_warn_standard="no_statutory_duty",
-    duty_to_warn_citation="NJ imposes no codified Tarasoff duty; clinician judgment (ethics-grounded)",
+    **_duty_kwargs("NJ"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="N.J.S.A. 9:6-8.10 (mandatory reporting of child abuse)",
@@ -348,8 +390,7 @@ _NY = MhProfile(
     board_url="https://www.op.nysed.gov/professions/social-work",
     governing_statute="N.Y. Educ. Law art. 154 (Social Work); art. 163 (Mental Health Practitioners)",
     statute_url="https://www.nysenate.gov/legislation/laws/edn/a154",
-    duty_to_warn_standard="duty_to_protect",
-    duty_to_warn_citation="N.Y. Mental Hyg. Law §9.46 (clinical judgment to protect; case-law informed)",
+    **_duty_kwargs("NY"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="N.Y. Soc. Serv. Law §413 (mandatory reporters)",
@@ -371,8 +412,7 @@ _CT = MhProfile(
     board_url="https://portal.ct.gov/dph",
     governing_statute="Conn. Gen. Stat. ch. 383 (Social Workers); ch. 383b (Counselors/MFTs)",
     statute_url="https://www.cga.ct.gov/current/pub/chap_383.htm",
-    duty_to_warn_standard="duty_to_protect",
-    duty_to_warn_citation="Conn. Gen. Stat. §17a-450 (duty to take reasonable precautions)",
+    **_duty_kwargs("CT"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="Conn. Gen. Stat. §17a-101 (mandated reporters)",
@@ -394,8 +434,7 @@ _MA = MhProfile(
     board_url="https://www.mass.gov/orgs/board-of-registration-of-social-workers",
     governing_statute="M.G.L. c. 112, §§129A-135 (Allied MH professions); c. 112 §132 (Social Workers)",
     statute_url="https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXVI/Chapter112",
-    duty_to_warn_standard="duty_to_protect",
-    duty_to_warn_citation="M.G.L. c. 123, §36B (duty to take reasonable precautions to protect)",
+    **_duty_kwargs("MA"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=24,
     mandated_report_citation="M.G.L. c. 119, §51A (mandated reporters of child abuse)",
@@ -421,9 +460,7 @@ _CA = MhProfile(
     board_url="https://www.bbs.ca.gov/",
     governing_statute="Cal. Bus. & Prof. Code §4980 et seq. (MFTs, LCSWs, LPCCs)",
     statute_url="https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=BPC&division=2.&title=&part=&chapter=13.&article=",
-    duty_to_warn_standard="tarasoff_codified",
-    duty_to_warn_citation="Tarasoff v. Regents of Univ. of Cal., 17 Cal.3d 425 (1976); Cal. Civ. Code §43.92",
-    duty_to_warn_note="Codified duty to protect when patient makes a serious threat of physical violence against a reasonably identifiable victim",
+    **_duty_kwargs("CA"),
     mandated_reporter_scope="all_clinicians",
     child_abuse_scr_window_hours=36,
     mandated_report_citation="Cal. Penal Code §11164 (mandated reporters)",
@@ -476,3 +513,16 @@ def mh_summary() -> list[dict]:
             "retention_adult_yr": p.record_retention_adult_years,
         })
     return out
+
+
+__all__ = [
+    "NOT_LEGAL_ADVICE",
+    "DutyToWarnEntry",
+    "DutyToWarnStandard",
+    "MhProfile",
+    "all_duty_to_warn",
+    "get_duty_to_warn",
+    "get_mh_profile",
+    "mh_summary",
+    "registered_mh_states",
+]

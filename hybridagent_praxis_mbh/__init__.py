@@ -1,14 +1,14 @@
 """SMF Praxis Mental/Behavioral Health vertical — registration module.
 
-This package is the private paid Mental/Behavioral Health (MBH) vertical build
-for Praxis. It depends on the open-core ``smf-praxis`` base and registers the
-MBH vertical's spec and eval cases with the base's
+This package is the Mental/Behavioral Health (MBH) vertical build for Praxis,
+licensed under the MIT License. It depends on the open-core ``praxis-agent``
+base and registers the MBH vertical's spec and eval cases with the base's
 :mod:`hybridagent.verticals.registry` on import.
 
 Installation::
 
-    pip install smf-praxis        # open-core base (public, MIT)
-    pip install praxis-mbh        # this vertical (private, commercial)
+    pip install praxis-agent      # open-core base (MIT)
+    pip install praxis-mbh        # this vertical (MIT)
 
 Activating the vertical lights up:
 
