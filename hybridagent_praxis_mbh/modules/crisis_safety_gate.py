@@ -9,9 +9,8 @@ in acute suicidal crisis. Two distinct clinical-legal duties intersect:
    credible serious threat of physical violence against a reasonably
    identifiable victim, a clinician may be *required* to take reasonable
    steps to protect the victim — warn the victim, notify law enforcement,
-   or take other protective action. The standard varies by state: codified
-   (CA-style Tarasoff statute), common-law duty, duty-to-protect only, or
-   no statutory duty (clinician judgment under ethics rules). This module
+   or take other protective action.    The standard varies by state: codified (CA), mandatory statutory duty,
+   case-law duty, permissive disclosure, or no duty verified. This module
    reads the state's ``duty_to_warn_standard`` from :mod:`mh_jurisdictions`
    and returns a report — it does NOT execute the warning. Executing a
    warning (SEND-class) is held for clinician approval.
@@ -111,10 +110,10 @@ def assess_duty_to_warn(assessment: CrisisAssessment, *, now: float = 0.0) -> Du
     - Credible threat + identifiable victim + (codified-duty OR
       duty-to-protect state) → ``duty_triggered=True``,
       ``requires_clinician_action=True``, critical finding.
-    - Credible threat + identifiable victim + no-statutory-duty state →
-      ``duty_triggered=False`` but a high finding: the clinician must
-      exercise professional judgment (ethics may still require protective
-      action).
+    - Credible threat + identifiable victim + permissive-disclosure or
+      no-duty state → ``duty_triggered=False`` but a high finding: the
+      clinician must exercise professional judgment (a permissive statute
+      allows disclosure; ethics may still require protective action).
     - No credible threat OR no identifiable victim → ``duty_triggered=False``;
       info finding that the threshold is not met.
     - Suicidal crisis is surfaced separately (does not trigger duty-to-warn
@@ -162,22 +161,34 @@ def assess_duty_to_warn(assessment: CrisisAssessment, *, now: float = 0.0) -> Du
     if prof.duty_to_warn_standard in ("tarasoff_codified", "tarasoff_common_law", "duty_to_protect"):
         report.duty_triggered = True
         report.requires_clinician_action = True
+        discharge = prof.duty_discharge or "warn victim / notify law enforcement / hospitalize"
         report.findings.append(DutyToWarnFinding(
             "critical", "duty_to_protect_triggered",
             f"credible threat against identifiable victim under "
             f"{prof.duty_to_warn_standard} — {prof.duty_to_warn_citation}. "
-            f"Clinician must decide protective action (warn victim / notify "
-            f"law enforcement / hospitalize). Praxis does NOT contact the "
-            f"victim or law enforcement autonomously — SEND held.",
+            f"Discharge described by the cited source: {discharge}. "
+            f"Clinician must decide protective action. Praxis does NOT contact the "
+            f"victim or law enforcement autonomously — SEND held. "
+            f"Not legal or clinical advice.",
         ))
+    elif prof.duty_to_warn_standard == "permissive_disclosure":
+        report.findings.append(DutyToWarnFinding(
+            "high", "permissive_disclosure",
+            f"credible threat against identifiable victim. {state} permits "
+            f"disclosure but this table did not verify a mandatory duty "
+            f"({prof.duty_to_warn_citation}). Clinician must exercise "
+            f"professional judgment — protective action may still be warranted. "
+            f"Not legal or clinical advice.",
+        ))
+        report.requires_clinician_action = True
     else:
-        # no statutory duty
+        # no statutory duty verified
         report.findings.append(DutyToWarnFinding(
             "high", "professional_judgment_required",
-            f"credible threat against identifiable victim, but {state} imposes "
-            f"no codified duty ({prof.duty_to_warn_citation}). Clinician must "
-            f"exercise professional judgment under ethics rules — protective "
-            f"action may still be warranted.",
+            f"credible threat against identifiable victim, but no mandatory "
+            f"duty was verified for {state} ({prof.duty_to_warn_citation}). "
+            f"Clinician must exercise professional judgment under ethics rules — "
+            f"protective action may still be warranted. Not legal or clinical advice.",
         ))
         report.requires_clinician_action = True
 
@@ -252,4 +263,5 @@ def render_duty_to_warn_report(report: DutyToWarnReport) -> str:
     lines.append("NOTE: Praxis does NOT contact the victim or law enforcement "
                  "autonomously. Every external contact is a SEND-class action "
                  "held for clinician approval.")
+    lines.append("NOT LEGAL OR CLINICAL ADVICE. Verify with your state board and counsel.")
     return "\n".join(lines)

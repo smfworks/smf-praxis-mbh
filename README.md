@@ -1,8 +1,13 @@
 # smf-praxis-mbh
 
-**SMF Praxis Mental/Behavioral Health vertical pack** — the private, commercial
+**SMF Praxis Mental/Behavioral Health vertical pack** — the
 Mental/Behavioral Health (MBH) build for the [Praxis](https://github.com/smfworks/smf-praxis)
 governed agent platform.
+
+**Not legal or clinical advice.** The jurisdiction tables in this pack are
+decision-support ground. Verify them with your state board and counsel before
+you rely on them. Praxis does not diagnose, determine treatment, or establish
+a therapeutic relationship.
 
 This vertical equips Praxis for licensed mental/behavioral health professionals
 (psychiatrists, psychologists, licensed clinical social workers, licensed
@@ -14,7 +19,7 @@ VA, WV, MD, PA, OH, NJ, NY, CT, MA.
 - **`behavioral_health` pack** — persona, knowledge base, tool allowlist,
   HIPAA-aware risk policy (READ + DRAFT autonomous; SEND + DESTRUCTIVE held
   for clinician dual approval), and 8 domain skills.
-- **8 compliance modules** (private to this package):
+- **8 compliance modules** shipped in this package:
   - `psychotherapy_notes_governance` — 45 CFR §164.508 specific-authorization;
     Praxis drafts progress notes only, never psychotherapy notes.
   - `crisis_safety_gate` — duty-to-warn/protect (Tarasoff) assessment +
@@ -50,12 +55,11 @@ VA, WV, MD, PA, OH, NJ, NY, CT, MA.
 
 ## Installation
 
-This is a private commercial vertical. It depends on the open-core Praxis
-base.
+This vertical depends on the open-core Praxis base. Both are MIT-licensed.
 
 ```bash
-pip install praxis-agent        # open-core base (public, MIT)
-pip install praxis-mbh          # this vertical (private, commercial)
+pip install praxis-agent        # open-core base (MIT)
+pip install praxis-mbh          # this vertical (MIT)
 ```
 
 Activating the vertical lights up the `behavioral_health` pack, its dashboard
@@ -75,6 +79,10 @@ ruff check hybridagent_praxis_mbh/        # lint clean
 
 ## License
 
-Commercial — SMF Works. All rights reserved. See [LICENSE](LICENSE). The
-open-core Praxis base (`praxis-agent`) is MIT-licensed; this vertical's
-code is not covered by that MIT license.
+MIT. Copyright (c) 2026 SMF Works. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+As of 2026, SMF Works relicenses all prior versions and tags of this project
+(including v0.1.x and v0.2.x) under the MIT License.
+
+Not legal or clinical advice. Verify duty-to-warn and other jurisdiction
+facts with your state board and counsel.
